@@ -41,15 +41,17 @@ export default function Login() {
               [
                 {
                   text: 'OK',
-                  onPress: () => router.replace({ pathname: '/otp', params: { mobile, otp: data.otp } }),
+                  onPress: () => router.push({ pathname: '/otp', params: { mobile, otp: data.otp } }),
                 },
               ],
               { cancelable: false }
             );
           } else {
             // No OTP in response, just redirect
-            router.replace({ pathname: '/otp', params: { mobile } });
+            router.push({ pathname: '/otp', params: { mobile } });
           }
+        }else{
+          Toast.show({ type: 'error', text1: data.message});
         }
       } catch (error) {
         Toast.show({ type: 'error', text1: 'Network error. Please try again.' });

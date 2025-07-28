@@ -1,10 +1,10 @@
-// app/otp.tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import * as Animatable from 'react-native-animatable';
+import Toast from 'react-native-toast-message';
 import { COLORS, FONTS, SIZES } from '../theme';
 import { BASE_URL } from './config';
 import { useInternet } from './InternetChecker';
@@ -14,11 +14,13 @@ export default function OtpScreen() {
   const { mobile, otp: sentOtp } = useLocalSearchParams<{ mobile: string; otp?: string }>();
   const [otp, setOtp] = useState('');
   const [buttonScale, setButtonScale] = useState(1);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const isConnected = useInternet();
 
   const handleVerify = async () => {
     if (otp.length === 6) {
+      setLoading(true);
       try {
         const response = await fetch(`${BASE_URL}/api/auth/verify-otp`, {
           method: 'POST',
@@ -27,22 +29,24 @@ export default function OtpScreen() {
         });
         const data = await response.json();
 
-        if (data.token && data.user) {
-          await AsyncStorage.setItem('userToken', data.token);
-          await AsyncStorage.setItem('userData', JSON.stringify(data.user));
-          router.replace('/tabs/home'); // Use replace to clear history
-        } else if (data.message === 'OTP verified') {
-          router.replace('/tabs/home'); // Use replace to clear history
-        } else if (data.message) {
-          alert(data.message); // Show API error message
+        if (data.status === 'success') {
+          if (data.token && data.user) {
+            await AsyncStorage.setItem('userToken', data.token);
+            await AsyncStorage.setItem('userData', JSON.stringify(data.user));
+          }
+          router.replace('/tabs/home');
+        } else if (data.status === 'failure' && data.message) {
+          Toast.show({ type: 'error', text1: data.message});
         } else {
-          alert('Invalid OTP. Please try again.');
+          Toast.show({ type: 'error', text1: 'Invalid OTP. Please try again.' });
         }
       } catch (error) {
-        alert('Network error. Please try again.');
+        Toast.show({ type: 'error', text1: 'Network error. Please try again.' });
+      } finally {
+        setLoading(false);
       }
     } else {
-      alert('Please enter a valid 6-digit OTP.');
+      Toast.show({ type: 'error', text1: 'Please enter a valid 6-digit OTP.' });
     }
   };
 
@@ -90,9 +94,13 @@ export default function OtpScreen() {
               onPressOut={() => setButtonScale(1)}
               onPress={handleVerify}
               activeOpacity={0.8}
-              disabled={!isConnected} // Disable button if not connected
+              disabled={!isConnected || loading} // Disable button if not connected
             >
-              <Text style={commonStyles.buttonText}>Continue</Text>
+              {loading ? (
+                <Text style={commonStyles.buttonText}>Loading...</Text>
+              ) : (
+                <Text style={commonStyles.buttonText}>Continue</Text>
+              )}
             </TouchableOpacity>
           </Animatable.View>
         </Animatable.View>
