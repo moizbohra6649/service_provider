@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { COLORS } from '../../theme';
-import { logout } from '../logout'; // Adjust path if needed
+import { logout } from '../utils/logout';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -57,7 +57,6 @@ export default function ProfileScreen() {
 
           <TouchableOpacity
             style={styles.editBtn}
-            onPress={() => router.push('/edit-profile')}
             activeOpacity={0.85}
           >
             <Text style={styles.editBtnText}>Edit Profile</Text>
