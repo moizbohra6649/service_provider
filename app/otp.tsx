@@ -1,171 +1,9 @@
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-// import { useLocalSearchParams, useRouter } from 'expo-router';
-// import React, { useRef, useState } from 'react';
-// import {
-//   Image,
-//   StyleSheet,
-//   Text,
-//   TextInput,
-//   TouchableOpacity,
-//   View
-// } from 'react-native';
-// import Toast from 'react-native-toast-message';
-// import { BASE_URL } from './config';
-// import { useInternet } from './InternetChecker';
-
-// export default function OtpScreen() {
-//   const { mobile } = useLocalSearchParams<{ mobile: string }>();
-//   const router = useRouter();
-//   const isConnected = useInternet();
-
-//   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-//   const [loading, setLoading] = useState(false);
-//   const inputs = useRef<(TextInput | null)[]>([]);
-
-//   const handleChange = (text: string, index: number) => {
-//     const updatedOtp = [...otp];
-//     updatedOtp[index] = text.replace(/[^0-9]/g, '');
-//     setOtp(updatedOtp);
-
-//     if (text && index < 5) {
-//       inputs.current[index + 1]?.focus();
-//     } else if (text === '' && index > 0) {
-//       inputs.current[index - 1]?.focus();
-//     }
-//   };
-
-//   const handleVerify = async () => {
-//     const finalOtp = otp.join('');
-
-//     if (finalOtp.length !== 6) {
-//       Toast.show({ type: 'error', text1: 'Please enter a valid 5-digit OTP.' });
-//       return;
-//     }
-
-//     if (!isConnected) {
-//       Toast.show({ type: 'error', text1: 'No internet connection' });
-//       return;
-//     }
-
-//     setLoading(true);
-//     try {
-//       const response = await fetch(`${BASE_URL}/api/auth/verify-otp`, {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify({ phone: mobile, otp: finalOtp }),
-//       });
-
-//       const data = await response.json();
-
-//       if (data.status === 'success') {
-//         if (data.token && data.user) {
-//           await AsyncStorage.setItem('userToken', data.token);
-//           await AsyncStorage.setItem('userData', JSON.stringify(data.user));
-//         }
-//         router.replace('/tabs/home');
-//       } else {
-//         Toast.show({ type: 'error', text1: data.message || 'Invalid OTP' });
-//       }
-//     } catch (error) {
-//       Toast.show({ type: 'error', text1: 'Something went wrong. Try again.' });
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <View style={styles.container}>
-//       <Image source={require('../assets/logo.png')} style={styles.logo} resizeMode="contain" />
-//       <Text style={styles.title}>Verify your Phone number</Text>
-//       <Text style={styles.subtitle}>Sent to +91 {mobile}</Text>
-
-//       <View style={styles.otpContainer}>
-//         {otp.map((digit, index) => (
-//           <TextInput
-//             key={index}
-//             ref={(ref) => (inputs.current[index] = ref)}
-//             style={styles.otpInput}
-//             keyboardType="number-pad"
-//             maxLength={1}
-//             value={digit}
-//             onChangeText={(text) => handleChange(text, index)}
-//             textAlign="center"
-//           />
-//         ))}
-//       </View>
-
-//       <TouchableOpacity
-//         style={[styles.button, { opacity: loading ? 0.6 : 1 }]}
-//         onPress={handleVerify}
-//         disabled={loading}
-//       >
-//         <Text style={styles.buttonText}>{loading ? 'Verifying...' : 'Verify'}</Text>
-//       </TouchableOpacity>
-//     </View>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#fff',
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     padding: 30,
-//   },
-//   logo: {
-//     width: 80,
-//     height: 80,
-//     marginBottom: 20,
-//   },
-//   title: {
-//     fontSize: 22,
-//     fontWeight: '600',
-//     marginBottom: 8,
-//     color: '#000',
-//   },
-//   subtitle: {
-//     fontSize: 14,
-//     color: '#666',
-//     marginBottom: 30,
-//   },
-//   otpContainer: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     width: '80%',
-//     marginBottom: 30,
-//   },
-//   otpInput: {
-//     borderBottomWidth: 2,
-//     borderColor: '#888',
-//     fontSize: 24,
-//     paddingVertical: 8,
-//     width: 40,
-//     marginHorizontal: 5,
-//     color: '#000',
-//   },
-//   button: {
-//     backgroundColor: '#e91e63',
-//     paddingVertical: 14,
-//     paddingHorizontal: 50,
-//     borderRadius: 10,
-//     alignItems: 'center',
-//   },
-//   buttonText: {
-//     color: '#fff',
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//   },
-// });
-
-// VerifyPhoneScreen.js
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { Path, Svg } from 'react-native-svg';
 import styles from './styles';
-
-
 
 import { StackNavigationProp } from '@react-navigation/stack';
 import Loader from './common/Loader';
@@ -176,8 +14,16 @@ type VerifyPhoneScreenProps = {
 
 const VerifyPhoneScreen = ({ navigation }: VerifyPhoneScreenProps) => {
   const [code, setCode] = useState(['', '', '', '']);
-    const [loading, setLoading] = useState(false);
-  
+  const [loading, setLoading] = useState(false);
+  const [mobileNumber, setMobileNumber] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchMobileNumber = async () => {
+      const number = await AsyncStorage.getItem('mobileNumber');
+      setMobileNumber(number);
+    };
+    fetchMobileNumber();
+  }, []);
 
   const handleCodeChange = (value: string, index: number) => {
     const newCode = [...code];
@@ -200,7 +46,7 @@ const VerifyPhoneScreen = ({ navigation }: VerifyPhoneScreenProps) => {
       <Text style={verifyStyles.heading}>Verify your phone number</Text>
       <Text style={verifyStyles.subheading}>
         Enter the code that was sent to your WhatsApp number{'\n'}
-        <Text style={verifyStyles.phone}>+234 808 547 2417</Text>
+        <Text style={verifyStyles.phone}>{mobileNumber}</Text>
       </Text>
 
       <View style={verifyStyles.codeContainer}>

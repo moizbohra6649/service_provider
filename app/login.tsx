@@ -9,10 +9,35 @@ import {
   ViewStyle
 } from "react-native";
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { StackNavigationProp } from "@react-navigation/stack";
+import countries from "country-calling-code";
 import { router } from "expo-router";
+import { PhoneNumberUtil } from "google-libphonenumber";
 import Svg, { Path } from "react-native-svg";
+import Toast from "react-native-toast-message";
 import Loader from "./common/Loader";
+import { apiPost } from "./common/api";
+
+const phoneUtil = PhoneNumberUtil.getInstance();
+
+function validatePhoneNumber(dialCode: string, phone: string): boolean {
+  // remove '+'
+  const code = dialCode.replace("+", "");
+
+  // find country by dial code
+  const country = countries.find(c => c.countryCodes.includes(code));
+  if (!country) return false;
+
+  const region = country.isoCode2; // e.g. "IN", "US"
+
+  try {
+    const number = phoneUtil.parse(phone, region);
+    return phoneUtil.isValidNumber(number);
+  } catch {
+    return false;
+  }
+}
 
 type SignUpScreenProps = {
   navigation: StackNavigationProp<any>;
@@ -22,6 +47,15 @@ const SignUpScreen = ({ navigation }: SignUpScreenProps) => {
   const [countryCode, setCountryCode] = useState("+91");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const sendOtp = async (phone: string) => {
+    try {
+      const result = await apiPost("/api/auth/send-otp", { phone });
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  };
 
   return (
     <>
@@ -36,7 +70,7 @@ const SignUpScreen = ({ navigation }: SignUpScreenProps) => {
             </Svg>
           </Text>
         </TouchableOpacity>
-        <Text style={styles.heading}>Sign up to service_provider</Text>
+        <Text style={styles.heading}>Sign up to Service Provider</Text>
 
         <View style={styles.row}>
           <View style={styles.countryCodeBox}>
@@ -67,18 +101,42 @@ const SignUpScreen = ({ navigation }: SignUpScreenProps) => {
 
         <TouchableOpacity
           style={[styles.continueButton, loading && { opacity: 0.7 }]}
-          onPress={() => {
+          onPress={async () => {
+            // Validation for empty or less than 10 digits
+            if (!phone || phone.length < 10) {
+              Toast.show({
+                type: "error",
+                text1: "Invalid Number",
+                text2: "Please enter a valid 10-digit mobile number.",
+              });
+              return;
+            } else if (!validatePhoneNumber(countryCode, phone)) {
+              Toast.show({
+                type: "error",
+                text1: "Invalid Number",
+                text2: "Please enter a valid mobile number.",
+              });
+              return;
+            }
             setLoading(true);
-            setTimeout(() => {
+            try {
+              await sendOtp(countryCode + phone);
+              await AsyncStorage.setItem("mobileNumber", countryCode + phone); // Save to local storage
               setLoading(false);
-              router.replace("/Otp");
-            }, 1500); // simulate API or verification
+              router.replace("/otp");
+            } catch (e) {
+              setLoading(false);
+              Toast.show({
+                type: "error",
+                text1: "OTP Error",
+                text2: "Failed to send OTP. Please try again.",
+              });
+            }
           }}
           disabled={loading}
         >
           {loading ? (
-               <Loader size="small" color="#fff" />
-
+            <Loader size="small" color="#fff" />
           ) : (
             <Text style={styles.continueButtonText}>Continue</Text>
           )}

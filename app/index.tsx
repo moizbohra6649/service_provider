@@ -16,7 +16,7 @@ export default function Home() {
       if (token) {
         setLoading(false); // Show home
       } else {
-        router.replace('/Login');
+        router.replace('/login');
       }
     }, 2000);
     return () => clearTimeout(timer);
@@ -28,7 +28,7 @@ export default function Home() {
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem('userToken');
-    router.replace('/Login');
+    router.replace('/login');
   };
 
   return (
