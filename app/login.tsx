@@ -1,67 +1,27 @@
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, Image, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import * as Animatable from 'react-native-animatable';
-import Toast from 'react-native-toast-message';
-import { COLORS } from '../theme';
-import { BASE_URL } from './config';
-import { InternetChecker, useInternet } from './InternetChecker';
-import { commonStyles } from './styles';
+import React, { useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  TextInput,
+  TextStyle,
+  TouchableOpacity,
+  View,
+  ViewStyle
+} from "react-native";
 
-export default function Login() {
-  const [mobile, setMobile] = useState('');
-  const [buttonScale, setButtonScale] = useState(1);
+import type { StackNavigationProp } from "@react-navigation/stack";
+import { router } from "expo-router";
+import Svg, { Path } from "react-native-svg";
+import Loader from "./common/Loader";
+
+type SignUpScreenProps = {
+  navigation: StackNavigationProp<any>;
+};
+
+const SignUpScreen = ({ navigation }: SignUpScreenProps) => {
+  const [countryCode, setCountryCode] = useState("+91");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
-  const isConnected = useInternet();
-
-  const handleContinue = async () => {
-    if (mobile.length === 10) {
-      setLoading(true);
-      try {
-        const response = await fetch(`${BASE_URL}/api/auth/send-otp`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: mobile }),
-        });
-        const data = await response.json();
-        Toast.show({
-          type: data.status === 'success' ? 'success' : 'error',
-          text1: data.message || (data.status === 'success' ? 'OTP sent' : 'Failed to send OTP'),
-        });
-
-        if (data.status === 'success') {
-          if (data.otp) {
-            // Show OTP in popup, then redirect on OK
-            Alert.alert(
-              'OTP Sent',
-              `Your OTP is: ${data.otp}`,
-              [
-                {
-                  text: 'OK',
-                  onPress: () => router.push({ pathname: '/otp', params: { mobile, otp: data.otp } }),
-                },
-              ],
-              { cancelable: false }
-            );
-          } else {
-            // No OTP in response, just redirect
-            router.push({ pathname: '/otp', params: { mobile } });
-          }
-        }else{
-          Toast.show({ type: 'error', text1: data.message});
-        }
-      } catch (error) {
-        Toast.show({ type: 'error', text1: 'Network error. Please try again.' });
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      Toast.show({ type: 'error', text1: 'Please enter a valid 10-digit mobile number.' });
-    }
-  };
 
   return (
     <>
@@ -76,7 +36,7 @@ export default function Login() {
             </Svg>
           </Text>
         </TouchableOpacity>
-        <Text style={styles.heading}>Sign up to Service Provider</Text>
+        <Text style={styles.heading}>Sign up to service_provider</Text>
 
         <View style={styles.row}>
           <View style={styles.countryCodeBox}>
@@ -88,21 +48,13 @@ export default function Login() {
               keyboardType="phone-pad"
             />
           </View>
-          <Text style={commonStyles.title}>Welcome Back!</Text>
-        </Animatable.View>
-
-        {/* Input and Button */}
-        <Animatable.View animation="fadeInUp" delay={400} style={commonStyles.form}>
-          <View style={commonStyles.inputWrapper}>
-            <Ionicons name="call-outline" size={22} color={COLORS.gray} style={commonStyles.inputIcon} />
+          <View style={styles.phoneBox}>
             <TextInput
-              placeholder="Enter your mobile number"
+              style={styles.phoneInput}
+              placeholder="Enter mobile number"
               keyboardType="phone-pad"
-              value={mobile}
-              onChangeText={setMobile}
-              placeholderTextColor={COLORS.gray}
-              style={commonStyles.input}
-              maxLength={10}
+              value={phone}
+              onChangeText={setPhone}
             />
           </View>
         </View>
@@ -119,7 +71,7 @@ export default function Login() {
             setLoading(true);
             setTimeout(() => {
               setLoading(false);
-              router.replace("/otp");
+              router.replace("/Otp");
             }, 1500); // simulate API or verification
           }}
           disabled={loading}
@@ -132,8 +84,81 @@ export default function Login() {
           )}
         </TouchableOpacity>
       </View>
-      <InternetChecker />
-      <Toast />
-    </LinearGradient>
+    </>
   );
-}
+};
+
+const styles = StyleSheet.create<{
+  backArrow: TextStyle;
+  container: ViewStyle;
+  heading: TextStyle;
+  row: ViewStyle;
+  countryCodeBox: ViewStyle;
+  countryCodeInput: TextStyle;
+  phoneBox: ViewStyle;
+  phoneInput: TextStyle;
+  infoBox: ViewStyle;
+  infoText: TextStyle;
+  continueButton: ViewStyle;
+  continueButtonText: TextStyle;
+  orText: TextStyle;
+  socialButton: ViewStyle;
+}>({
+  backArrow: { fontSize: 24, marginBottom: 20, marginTop: 30 } as TextStyle,
+
+  container: {
+    padding: 20,
+    flex: 1,
+    justifyContent: "flex-start",
+    backgroundColor: "#fff",
+  },
+  heading: { fontSize: 22, fontWeight: "bold", marginBottom: 30 },
+  row: { flexDirection: "row", gap: 10 },
+  countryCodeBox: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    justifyContent: "center",
+    width: "25%",
+    height: 48,
+  },
+  countryCodeInput: { fontSize: 16 },
+  phoneBox: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    height: 48,
+    justifyContent: "center",
+  },
+  phoneInput: { fontSize: 16 },
+  infoBox: {
+    backgroundColor: "#f2f2f2",
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 15,
+    marginBottom: 20,
+  },
+  infoText: { fontSize: 14, color: "#444" },
+  continueButton: {
+    backgroundColor: "#1a434e",
+    padding: 15,
+    borderRadius: 30,
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  continueButtonText: { color: "#fff", fontWeight: "bold" },
+  orText: { textAlign: "center", marginVertical: 10, color: "#999" },
+  socialButton: {
+    borderWidth: 1,
+    borderColor: "#000",
+    padding: 12,
+    borderRadius: 25,
+    alignItems: "center",
+    marginVertical: 5,
+  },
+});
+
+export default SignUpScreen;

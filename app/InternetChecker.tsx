@@ -15,7 +15,7 @@ export function useInternet() {
   return isConnected;
 }
 
-export function InternetChecker() {
+export default function InternetChecker() {
   const isConnected = useInternet();
 
   if (isConnected) return null;

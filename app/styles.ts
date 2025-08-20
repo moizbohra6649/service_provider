@@ -8,8 +8,8 @@ export const commonStyles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
     padding: SIZES?.padding ?? 16,
   },
   logoShadow: {

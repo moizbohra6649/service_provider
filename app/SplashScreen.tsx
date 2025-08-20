@@ -1,16 +1,10 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { COLORS } from '../theme';
 
 export default function SplashScreen() {
   return (
-    <LinearGradient
-      colors={[COLORS.primary, COLORS.secondary ?? COLORS.primary, COLORS.background]}
-      style={styles.gradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
+   
       <View style={styles.container}>
         <View style={styles.logoShadow}>
           <Image
@@ -20,7 +14,6 @@ export default function SplashScreen() {
           />
         </View>
       </View>
-    </LinearGradient>
   );
 }
 

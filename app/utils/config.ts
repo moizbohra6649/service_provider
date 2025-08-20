@@ -1,0 +1,1 @@
+export const BASE_URL = 'https://service-provider-backned.onrender.com';
